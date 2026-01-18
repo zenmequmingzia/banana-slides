@@ -20,8 +20,10 @@ def generate_user_template_thumbnails():
     import os
     from pathlib import Path
 
-    # Get upload folder from environment or use default
-    upload_folder = os.environ.get('UPLOAD_FOLDER', 'uploads')
+    # Get upload folder - use parent directory's uploads folder
+    script_dir = Path(__file__).resolve().parent
+    project_root = script_dir.parent.parent.parent  # migrations/versions -> migrations -> backend -> project
+    upload_folder = os.environ.get('UPLOAD_FOLDER', str(project_root / 'uploads'))
 
     try:
         from PIL import Image
@@ -104,7 +106,10 @@ def generate_page_thumbnails():
     import os
     from pathlib import Path
 
-    upload_folder = os.environ.get('UPLOAD_FOLDER', 'uploads')
+    # Get upload folder - use parent directory's uploads folder
+    script_dir = Path(__file__).resolve().parent
+    project_root = script_dir.parent.parent.parent  # migrations/versions -> migrations -> backend -> project
+    upload_folder = os.environ.get('UPLOAD_FOLDER', str(project_root / 'uploads'))
 
     try:
         from PIL import Image
@@ -132,13 +137,9 @@ def generate_page_thumbnails():
 
     for page_id, project_id, image_path in pages:
         try:
-            filename = Path(image_path).stem
-            version_match = filename.split('_v')
-            if len(version_match) < 2:
-                continue
-            version_number = int(version_match[-1].split('_')[0])
-
-            thumb_filename = f"{page_id}_v{version_number}_thumb.jpg"
+            # Generate thumbnail filename based on original filename
+            original_filename = Path(image_path).stem  # e.g., "page_id_timestamp" or "page_id_v1"
+            thumb_filename = f"{original_filename}_thumb.jpg"
             thumb_relative_path = f"{project_id}/pages/{thumb_filename}"
             thumb_full_path = Path(upload_folder) / thumb_relative_path
 
@@ -151,6 +152,7 @@ def generate_page_thumbnails():
 
             original_path = Path(upload_folder) / image_path.replace('\\', '/')
             if not original_path.exists():
+                print(f"  Skipped {page_id}: file not found")
                 continue
 
             image = Image.open(str(original_path))
